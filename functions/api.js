@@ -1,50 +1,49 @@
 const express = require('express');
 const serverless = require('serverless-http');
+const cors = require('cors');  // Import the cors middleware
 const app = express();
 const router = express.Router();
 
+const createCheckoutSession = require('../api/checkout');
+
 let records = [];
 
-//Get all students
+// Middleware to parse JSON request bodies
+app.use(express.json());
+
+// Use cors middleware to allow all origins
+app.use(cors());
+
+// Get all students
 router.get('/', (req, res) => {
   res.send('App is running..');
 });
 
-//Create new record
-router.post('/add', (req, res) => {
-  res.send('New record added.');
+// Create new record
+router.post('/add', async (req, res) => {
+  try {
+    // Extract relevant information from the request body
+    const requestBody = req.body;
+
+    // Do something with the request body, for example, add it to the records array
+    // Assuming you have a 'records' array defined somewhere in your code
+    records.push(requestBody);
+
+    // Use createCheckoutSession function to create a Stripe Checkout session
+    const checkoutSessionResponse = await createCheckoutSession(requestBody);
+
+    // Send a response with the processed data and Checkout session ID
+    res.json({
+      sessionId: checkoutSessionResponse.sessionId
+    });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error.message  });
+  }
 });
 
-//delete existing record
-router.delete('/', (req, res) => {
-  res.send('Deleted existing record');
-});
-
-//updating existing record
-router.put('/', (req, res) => {
-  res.send('Updating existing record');
-});
-
-//showing demo records
-router.get('/demo', (req, res) => {
-  res.json([
-    {
-      id: '001',
-      name: 'Smith',
-      email: 'smith@gmail.com',
-    },
-    {
-      id: '002',
-      name: 'Sam',
-      email: 'sam@gmail.com',
-    },
-    {
-      id: '003',
-      name: 'lily',
-      email: 'lily@gmail.com',
-    },
-  ]);
-});
-
+// Mount the router
 app.use('/.netlify/functions/api', router);
+
+// Export the serverless handler
 module.exports.handler = serverless(app);
